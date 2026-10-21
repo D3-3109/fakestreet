@@ -61,6 +61,23 @@ def _price_at(symbol: str, klass: str, steps_ago: int) -> float:
     return round(price, 6)
 
 
+def _all_assets() -> List[dict]:
+    """Built-ins plus any custom assets, tolerating a database that is not ready.
+
+    The stub is used both inside the running app (database present) and by the
+    CI contract check in a bare script (no database), so a missing table must
+    not turn into a crash.
+    """
+    import config
+
+    try:
+        from app import registry
+
+        return list(registry.all_assets())
+    except Exception:
+        return [dict(asset) for asset in config.ASSETS]
+
+
 def _resolve(symbol: str) -> Tuple[str, str]:
     """Map any identifier the market layer might pass to (display_symbol, klass).
 
@@ -68,10 +85,8 @@ def _resolve(symbol: str) -> Tuple[str, str]:
     (`bitcoin`), stocks and fiat arrive as the symbol itself. Resolving through
     the registry handles both without the caller having to care.
     """
-    from app import registry
-
     wanted = str(symbol or "").strip()
-    for asset in registry.all_assets():
+    for asset in _all_assets():
         if asset["symbol"].upper() == wanted.upper() or asset["provider_id"] == wanted:
             return asset["symbol"].upper(), asset["asset_class"]
     return wanted.upper(), "stock"
@@ -100,13 +115,12 @@ def _search(symbols: List[str], query: str, limit: int) -> List[dict]:
     query = (query or "").strip().upper()
     if not query:
         return []
-    from app import registry
-
+    by_symbol = {a["symbol"].upper(): a for a in _all_assets()}
     results = []
     for symbol in symbols:
         if query not in symbol.upper():
             continue
-        asset = registry.get_asset(symbol) or {}
+        asset = by_symbol.get(symbol.upper(), {})
         results.append({
             "symbol": symbol,
             "name": asset.get("name", symbol),
@@ -142,9 +156,7 @@ class _Stocks:
 
     @staticmethod
     def search(query: str, limit: int = 10) -> List[dict]:
-        from app import registry
-
-        symbols = [a["symbol"] for a in registry.all_assets() if a["asset_class"] == "stock"]
+        symbols = [a["symbol"] for a in _all_assets() if a["asset_class"] == "stock"]
         return _search(symbols, query, limit)
 
     @staticmethod
@@ -161,9 +173,7 @@ class _Crypto:
 
     @staticmethod
     def search(query: str, limit: int = 10) -> List[dict]:
-        from app import registry
-
-        assets = [a for a in registry.all_assets() if a["asset_class"] == "crypto"]
+        assets = [a for a in _all_assets() if a["asset_class"] == "crypto"]
         query = (query or "").strip().upper()
         if not query:
             return []
@@ -191,23 +201,19 @@ class _Fiat:
 
     @staticmethod
     def supported() -> Dict[str, str]:
-        from app import registry
-
         return {
             a["symbol"]: a["name"]
-            for a in registry.all_assets()
+            for a in _all_assets()
             if a["asset_class"] == "fiat"
         }
 
     @staticmethod
     def search(query: str, limit: int = 10) -> List[dict]:
-        from app import registry
-
         query = (query or "").strip().lower()
         if not query:
             return []
         results = []
-        for asset in registry.all_assets():
+        for asset in _all_assets():
             if asset["asset_class"] != "fiat":
                 continue
             if query in asset["symbol"].lower() or query in asset["name"].lower():

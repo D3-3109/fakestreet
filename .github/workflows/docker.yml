@@ -78,13 +78,19 @@ jobs:
       - name: Smoke-test the built image
         # Runs the image the way a user would and checks the API answers. Kept
         # in offline mode so this job never fails on a flaky market-data feed.
+        #
+        # The image reference comes from metadata-action's first computed tag:
+        # it lowercases the owner, and Docker rejects uppercase repository
+        # names ("D3-3109/..." is invalid as an image reference).
         run: |
           set -euo pipefail
+          IMAGE="$(echo '${{ steps.meta.outputs.tags }}' | head -n1)"
+          echo "testing ${IMAGE}"
           docker run --rm -d --name tg-smoke \
             -p 8000:8000 \
             -e TRADING_GAME_OFFLINE=1 \
             -e TRADING_GAME_DB=/app/data/trading_game.db \
-            "${REGISTRY}/${IMAGE_NAME}:sha-${GITHUB_SHA::7}"
+            "$IMAGE"
 
           for i in $(seq 1 40); do
             if curl -fsS http://127.0.0.1:8000/api/health > /dev/null; then

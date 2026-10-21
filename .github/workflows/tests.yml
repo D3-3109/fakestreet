@@ -77,6 +77,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TRADING_GAME_OFFLINE: '1'
+      TRADING_GAME_DB: /tmp/provider-contract.db
     steps:
       - uses: actions/checkout@v4
 
@@ -93,6 +94,11 @@ jobs:
           python - <<'PY'
           import sys
           sys.path.insert(0, '.')
+
+          # The provider and registry read custom assets from SQLite, so create
+          # the schema first — same as the app does on startup.
+          from app.db import init_db
+          init_db()
 
           from app.providers import crypto, fiat, stocks
           from app import registry
