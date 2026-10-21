@@ -1,5 +1,8 @@
 # Trading game
 
+> **中文说明 / 本仓库新增功能（杠杆、永续合约、做空、周赛季、实时动态、中英双语）见 [README.zh.md](README.zh.md)。**
+> 下文是上游项目的原始说明，只描述基础现货功能。
+
 Trading game is a local, browser-based paper-trading game for a few people on the same network. Everyone gets play money, then buys and sells real-world stocks, cryptocurrencies, and currencies at live USD prices. It is for fun and learning, not financial advice. The prices are real, but every trade is fake. The login is a friendly barrier so players do not trample each other's portfolios; do not reuse a real password here.
 
 ## Features

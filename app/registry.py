@@ -6,6 +6,7 @@ import sqlite3
 import time
 
 import config
+from app import i18n
 from app.db import get_conn
 from app.providers import crypto, fiat, stocks
 
@@ -62,6 +63,7 @@ def create_custom_asset(
     provider_id=None,
     name=None,
     added_by=None,
+    lang: str = i18n.DEFAULT,
 ) -> dict:
     klass = str(asset_class or "").strip().lower()
     code = str(symbol or "").strip().upper()
@@ -69,34 +71,34 @@ def create_custom_asset(
     display_name = str(name or "").strip()
 
     if not code:
-        raise ValueError("Symbol is required")
+        raise i18n.ValidationError("asset.noSymbol", lang)
     if len(code) > 12 or SYMBOL_RE.fullmatch(code) is None:
-        raise ValueError("Symbol must be 12 characters or fewer and use only A-Z, 0-9, dots, or hyphens")
+        raise i18n.ValidationError("asset.badSymbol", lang)
     if klass not in ASSET_CLASSES:
-        raise ValueError("Pick stock, crypto, or fiat")
+        raise i18n.ValidationError("asset.badClass", lang)
     if get_asset(code) is not None:
-        raise ValueError(f"{code} is already in the game")
+        raise i18n.ValidationError("asset.alreadyInGame", lang, symbol=code)
 
     if klass == "stock":
         provider = code
         quotes = stocks.get_quotes([provider])
         if provider not in quotes:
-            raise ValueError(f"Couldn't find a stock with ticker {code}")
+            raise i18n.ValidationError("asset.stockNotFound", lang, symbol=code)
         if not display_name:
             display_name = _stock_name(code)
     elif klass == "crypto":
         if not provider:
-            raise ValueError("CoinGecko provider_id is required")
+            raise i18n.ValidationError("asset.missingProvider", lang)
         quotes = crypto.get_quotes([provider])
         if provider not in quotes:
-            raise ValueError("Couldn't find that coin on CoinGecko — use search to find it")
+            raise i18n.ValidationError("asset.coinNotFound", lang)
         if not display_name:
             display_name = _crypto_name(code, provider)
     else:
         provider = code
         supported = fiat.supported()
         if code not in supported:
-            raise ValueError(f"{code} isn't a supported currency")
+            raise i18n.ValidationError("asset.unsupportedCurrency", lang, code=code)
         display_name = display_name or supported[code]
 
     display_name = display_name or code
@@ -110,7 +112,7 @@ def create_custom_asset(
         conn.commit()
     except sqlite3.IntegrityError:
         conn.rollback()
-        raise ValueError(f"{code} is already in the game")
+        raise i18n.ValidationError("asset.alreadyInGame", lang, symbol=code)
     finally:
         conn.close()
 

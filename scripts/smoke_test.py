@@ -176,6 +176,193 @@ for sym in ("AAPL", "BTC", "EUR"):
     s, j = call("GET", f"/api/assets/{sym}/history?range=1mo")
     check(f"history {sym} non-empty", s == 200 and len(j.get("points", [])) > 0, f"{s}")
 
+# ---- derivatives ----
+# The password-reset flow above invalidated every session, including `token`, so
+# sign in again with the new password before testing authenticated endpoints.
+s, j = call("POST", "/api/login", {"username": uname, "password": "brandnew"})
+token = j.get("token")
+check("re-login for derivative tests", s == 200 and bool(token), f"{s} {j}")
+
+s, j = call("GET", "/api/derivatives/config")
+cfg = j
+check(
+    "derivatives config exposes limits",
+    s == 200 and ("uncapped_leverage" in cfg) and cfg.get("min_position_margin", 0) > 0,
+    f"{s} {j}",
+)
+
+s, j = call("GET", "/api/players/%d/positions" % pid)
+check("positions without token -> 401", s == 401, f"{s}")
+
+s, j = call("POST", "/api/positions", {"symbol": "AAPL", "kind": "perp", "direction": "long", "size": 10, "leverage": 5}, token=token)
+check("open long perp -> 200", s == 200 and j.get("ok") is True, f"{s} {j}")
+perp_id = (j.get("position") or {}).get("id")
+pos = j.get("position") or {}
+check("perp margin is notional/leverage", abs(pos.get("margin", 0) - pos.get("notional", 0) / 5) < 1e-6, str(pos))
+check("perp has a liquidation price", pos.get("liquidation_price") is not None, str(pos))
+
+s, j = call("POST", "/api/positions", {"symbol": "AAPL", "kind": "perp", "direction": "short", "size": 5, "leverage": 3}, token=token)
+check("open short perp -> 200", s == 200 and j.get("ok") is True, f"{s} {j}")
+short_id = (j.get("position") or {}).get("id")
+
+s, j = call("POST", "/api/positions", {"symbol": "AAPL", "kind": "future", "direction": "long", "size": 2, "leverage": 2}, token=token)
+check("open future -> 200", s == 200 and j.get("ok") is True, f"{s} {j}")
+check("future has an expiry", (j.get("position") or {}).get("expires_at") is not None, str(j.get("position")))
+future_id = (j.get("position") or {}).get("id")
+
+# Leverage is uncapped by default: the ceiling is the minimum margin, not a
+# hard multiple. 999x on one share is a ~$0.34 margin, still above the floor.
+s, j = call("POST", "/api/positions", {"symbol": "AAPL", "kind": "perp", "direction": "long", "size": 1, "leverage": 999}, token=token)
+check("high leverage accepted when margin clears the floor", s == 200 and j.get("ok") is True, f"{s} {j}")
+if s == 200:
+    call("POST", "/api/positions/%d/close" % j["position"]["id"], token=token)
+
+# Absurd leverage drives margin below the floor and must be rejected.
+s, j = call("POST", "/api/positions", {"symbol": "AAPL", "kind": "perp", "direction": "long", "size": 1, "leverage": 1e12}, token=token)
+check("leverage below minimum margin -> 400", s == 400 and j.get("ok") is False, f"{s} {j}")
+
+s, j = call("POST", "/api/positions", {"symbol": "AAPL", "kind": "perp", "direction": "long", "size": 1, "leverage": 0.5}, token=token)
+check("leverage below 1x -> 400", s == 400 and j.get("ok") is False, f"{s} {j}")
+
+s, j = call("POST", "/api/positions", {"symbol": "AAPL", "kind": "perp", "direction": "long", "size": 1_000_000, "leverage": 20}, token=token)
+check("margin above cash -> 400", s == 400 and j.get("ok") is False, f"{s} {j}")
+
+s, j = call("POST", "/api/positions", {"symbol": "AAPL", "kind": "spot", "direction": "long", "size": 1, "leverage": 2}, token=token)
+check("bad kind -> 400", s == 400 and j.get("ok") is False, f"{s} {j}")
+
+s, j = call("GET", "/api/players/%d/positions" % pid, token=token)
+open_positions = j.get("positions", [])
+check("positions listed (3 open)", s == 200 and len(open_positions) == 3, str(len(open_positions)))
+check("positions omit player_id", all("player_id" not in p for p in open_positions), "leaked")
+
+s, j = call("GET", "/api/players/%d/portfolio" % pid, token=token)
+check("portfolio reports locked margin", j.get("margin_locked", 0) > 0, str(j.get("margin_locked")))
+check("portfolio reports position equity", "positions_equity" in j, str(j.keys()))
+open_margin = j.get("margin_locked", 0)
+open_equity = j.get("positions_equity", 0)
+check("open equity approx equals margin at entry", abs(open_equity - open_margin) < open_margin * 0.05, f"{open_equity} vs {open_margin}")
+
+s, j = call("POST", "/api/positions/%d/margin" % perp_id, {"amount": 50}, token=token)
+check("add margin -> 200", s == 200 and j.get("ok") is True, f"{s} {j}")
+
+s, j = call("POST", "/api/positions/%d/margin" % perp_id, {"amount": 999_999_999}, token=token)
+check("add margin beyond cash -> 400", s == 400 and j.get("ok") is False, f"{s} {j}")
+
+s, j = call("POST", "/api/positions/%d/close" % perp_id, token=token)
+check("close perp -> 200", s == 200 and j.get("ok") is True, f"{s} {j}")
+check("close receipt has realized pl", "realized_pl" in (j.get("receipt") or {}), str(j.get("receipt")))
+
+s, j = call("POST", "/api/positions/%d/close" % perp_id, token=token)
+check("closing twice -> 400", s == 400 and j.get("ok") is False, f"{s} {j}")
+
+s, j = call("POST", "/api/positions/%d/close" % short_id, token=token)
+check("close short -> 200", s == 200 and j.get("ok") is True, f"{s} {j}")
+s, j = call("POST", "/api/positions/%d/close" % future_id, token=token)
+check("close future early -> 200", s == 200 and j.get("ok") is True, f"{s} {j}")
+
+s, j = call("GET", "/api/players/%d/positions?include_closed=true" % pid, token=token)
+closed = [p for p in j.get("positions", []) if not p.get("is_open")]
+check("closed positions kept in history", s == 200 and len(closed) >= 3, str(len(closed)))
+check("closed positions carry close reason", all(p.get("close_reason") for p in closed), "missing reason")
+
+s, j = call("GET", "/api/derivatives/funding/AAPL")
+check("funding endpoint returns a rate", s == 200 and isinstance(j.get("rate"), (int, float)), f"{s} {j}")
+s, j = call("GET", "/api/derivatives/funding/NOPE")
+check("funding unknown symbol -> 404", s == 404, f"{s}")
+
+s, j = call("GET", "/api/players/%d/funding" % pid, token=token)
+check("funding history reachable", s == 200 and "payments" in j, f"{s} {j}")
+
+s, j = call("POST", "/api/positions/monitor")
+check("monitor sweep runs", s == 200 and "liquidated" in j, f"{s} {j}")
+
+# A second account must not be able to touch the first account's positions.
+s, j = call("POST", "/api/register", {"username": uname + "_other", "password": pw, "recovery_word": word})
+other_token = j.get("token")
+s, j = call("POST", "/api/positions", {"symbol": "AAPL", "kind": "perp", "direction": "long", "size": 1, "leverage": 2}, token=other_token)
+other_pos = (j.get("position") or {}).get("id")
+s, j = call("POST", "/api/positions/%d/close" % other_pos, token=token)
+check("cannot close another player's position", s in (400, 403, 404), f"{s} {j}")
+s, j = call("POST", "/api/positions/%d/margin" % other_pos, {"amount": 1}, token=token)
+check("cannot fund another player's position", s in (400, 403, 404), f"{s} {j}")
+
+# ---- spot shorting ----
+s, j = call("POST", "/api/trade", {"symbol": "MSFT", "side": "sell", "quantity": 2}, token=token)
+check("selling with no holdings opens a short", s == 200 and j.get("ok") is True, f"{s} {j}")
+s, j = call("GET", "/api/players/%d/portfolio" % pid, token=token)
+msft = next((h for h in j.get("holdings", []) if h["symbol"] == "MSFT"), None)
+check("short shows negative quantity", msft is not None and msft["quantity"] < 0, str(msft))
+check("short flagged for the UI", msft is not None and msft.get("is_short") is True, str(msft))
+
+s, j = call("POST", "/api/trade", {"symbol": "MSFT", "side": "buy", "quantity": 2}, token=token)
+check("buying back covers the short", s == 200 and j.get("ok") is True, f"{s} {j}")
+s, j = call("GET", "/api/players/%d/portfolio" % pid, token=token)
+check("MSFT gone after full cover", "MSFT" not in {h["symbol"] for h in j.get("holdings", [])}, str(j.get("holdings")))
+
+# ---- leaderboard ranks on net worth including derivatives ----
+s, j = call("GET", "/api/leaderboard")
+lb = j.get("leaderboard", [])
+check("leaderboard carries margin info", all("open_positions" in r for r in lb), "missing field")
+
+# ---- dashboard, seasons, sampling ----
+s, j = call("GET", "/api/seasons/current")
+check("current season exists", s == 200 and j.get("season") is not None, f"{s} {j}")
+season = j.get("season") or {}
+check("season has a window", season.get("ends_at", 0) > season.get("starts_at", 0), str(season))
+
+s, j = call("POST", "/api/snapshots/run")
+check("sampler records prices", s == 200 and j.get("prices", 0) > 0, f"{s} {j}")
+check("sampler computes an index", j.get("index") is not None, str(j))
+
+s, j = call("GET", "/api/index/series?hours=24")
+check("index series readable", s == 200 and isinstance(j.get("series"), list), f"{s}")
+
+s, j = call("GET", "/api/sparklines")
+sparks = j.get("sparklines") or {}
+check("sparklines cover many symbols", s == 200 and len(sparks) > 10, str(len(sparks)))
+
+s, j = call("GET", "/api/dashboard")
+check("dashboard bundles the board", s == 200 and "feed" in j and "index" in j and "season" in j, f"{s} {list(j)}")
+check("dashboard carries a leaderboard", isinstance(j.get("leaderboard"), list), str(type(j.get("leaderboard"))))
+
+s, j = call("GET", "/api/activity")
+events = j.get("events") or []
+check("activity feed has events", s == 200 and len(events) > 0, str(len(events)))
+check("events carry structured detail", all(isinstance(e.get("detail"), dict) for e in events), "bad detail")
+check("feed includes our trades", any(e["kind"] == "trade" for e in events), "no trade events")
+
+s, j = call("GET", "/api/alerts", token=token)
+check("alerts endpoint reachable", s == 200 and isinstance(j.get("alerts"), list), f"{s} {j}")
+s, j = call("GET", "/api/alerts")
+check("alerts without token -> 401", s == 401, f"{s}")
+
+s, j = call("GET", "/api/players/%d/equity" % pid, token=token)
+check("equity curve readable", s == 200 and isinstance(j.get("series"), list), f"{s}")
+s, j = call("GET", "/api/players/%d/equity" % (pid + 999), token=token)
+check("other player's equity -> 403", s == 403, f"{s}")
+
+s, j = call("GET", "/api/players/%d/report" % pid, token=token)
+check("daily report readable", s == 200 and "has_data" in j, f"{s} {list(j)}")
+check("report carries trade counts", "trades" in j and "liquidations" in j, str(j))
+
+# A forced rollover must archive the standings and reset every book.
+s, j = call("POST", "/api/seasons/rollover")
+check("season rollover succeeds", s == 200 and j.get("ok") is True, f"{s} {j}")
+result = j.get("result") or {}
+check("rollover archives a winner", (result.get("winner") or {}).get("username") is not None, str(result.get("winner")))
+check("rollover opens the next season", (result.get("next") or {}).get("id") is not None, str(result.get("next")))
+
+s, j = call("GET", "/api/players/%d/portfolio" % pid, token=token)
+check("accounts reset after rollover", abs(j.get("cash", 0) - 100000) < 1e-6, str(j.get("cash")))
+check("holdings cleared after rollover", j.get("holdings") == [], str(j.get("holdings")))
+check("positions cleared after rollover", j.get("positions") == [], str(j.get("positions")))
+
+s, j = call("GET", "/api/seasons/history")
+check("season history lists the closed season", s == 200 and len(j.get("seasons") or []) >= 1, f"{s} {j}")
+
+s, j = call("GET", "/api/activity")
+check("season events reached the feed", any(e["kind"] in ("season_start", "season_end") for e in (j.get("events") or [])), "missing")
+
 # ---- static ----
 try:
     with urllib.request.urlopen(BASE + "/", timeout=15) as r:

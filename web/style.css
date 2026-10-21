@@ -12,8 +12,14 @@
   --bad: #ff5c7a;
   --warn: #ffcb6b;
   --shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
 }
+
+/* Chinese glyphs sit on a fuller baseline than Latin text, so give them a
+   little more line height or headings start to look cramped. */
+html:lang(zh-CN) h1 { line-height: 1.15; letter-spacing: -0.02em; }
+html:lang(zh-CN) .eyebrow { letter-spacing: 0.08em; }
+html:lang(zh-CN) .data-table th { letter-spacing: 0.02em; }
 
 * { box-sizing: border-box; }
 
@@ -59,6 +65,24 @@ button:disabled { cursor: wait; opacity: 0.65; }
   padding: clamp(1.5rem, 5vw, 3rem);
   position: relative;
   overflow: hidden;
+}
+
+.lang-toggle {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 2;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.header-actions .lang-toggle {
+  position: static;
 }
 
 .hero-card::after {
@@ -157,6 +181,12 @@ button {
   align-items: center;
   border-radius: 1.4rem;
   padding: 1rem;
+}
+
+/* Chinese labels are shorter, so the header summary can stay wider before it
+   wraps. Applies in both languages to keep the grid stable while switching. */
+@media (min-width: 861px) {
+  .desk-header { grid-template-columns: minmax(0, 1fr) minmax(360px, 1.6fr) auto; }
 }
 
 .summary-grid, .portfolio-summary {
@@ -332,6 +362,295 @@ button {
 .estimate-box strong { display: block; margin: 0.25rem 0; font-size: 1.4rem; font-family: "SFMono-Regular", Consolas, monospace; }
 .chart-box { height: 420px; margin-top: 1rem; }
 
+/* --- Derivatives ---------------------------------------------------------- */
+.sub-heading { margin-top: 1.75rem; }
+.sub-heading h3 { margin: 0; font-size: 1.05rem; }
+
+.leverage-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+.leverage-row input[type="range"] {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.leverage-row input[type="range"]:focus { box-shadow: none; }
+.leverage-row strong {
+  min-width: 3.5rem;
+  text-align: right;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  color: var(--accent);
+}
+
+/* A position close to liquidation warns in amber, past the line in red. */
+.ratio-warn { color: var(--warn); font-weight: 700; }
+.ratio-danger { color: var(--bad); font-weight: 700; }
+
+.dir-badge {
+  display: inline-block;
+  border-radius: 999px;
+  padding: 0.15rem 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+.dir-badge.long { background: rgba(39, 245, 138, 0.13); color: var(--good); }
+.dir-badge.short { background: rgba(255, 92, 122, 0.13); color: var(--bad); }
+.kind-note { color: var(--muted); font-size: 0.78rem; }
+
+.deriv-detail { display: grid; gap: 0.1rem; }
+.deriv-detail small { color: var(--muted); font-size: 0.72rem; }
+
+/* --- Dashboard (exchange-style home) -------------------------------------- */
+.season-bar {
+  display: grid;
+  gap: 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  padding: 0.9rem 1.1rem;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, rgba(72, 215, 255, 0.07), rgba(124, 92, 255, 0.07));
+}
+.season-info { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; }
+.season-label {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.season-info strong { font-size: 1.05rem; }
+.season-countdown {
+  margin-left: auto;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+.season-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(142, 160, 189, 0.18);
+  overflow: hidden;
+}
+#season-progress-fill {
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-2));
+  transition: width 0.6s ease;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+  gap: 1rem;
+}
+.dash-main, .dash-side { display: grid; gap: 1rem; align-content: start; }
+.dash-card {
+  border: 1px solid var(--line);
+  border-radius: 1.2rem;
+  padding: 1.1rem;
+  background: rgba(16, 27, 46, 0.72);
+}
+.dash-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+.dash-head h2 { font-size: 1.25rem; }
+.index-quote { text-align: right; }
+.index-quote strong {
+  display: block;
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 1.6rem;
+  font-variant-numeric: tabular-nums;
+}
+.index-quote span { font-size: 0.9rem; font-weight: 700; }
+.index-chart-box { height: 260px; }
+.equity-chart-box { height: 200px; }
+#index-ranges { margin-top: 0.6rem; }
+#equity-ranges { margin-top: 0; }
+
+.report-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Movers: a dense grid of mini quotes, the way an exchange board lists them. */
+.movers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.5rem;
+}
+.mover {
+  border: 1px solid var(--line);
+  border-radius: 0.85rem;
+  padding: 0.6rem 0.7rem;
+  background: rgba(8, 19, 34, 0.6);
+}
+.mover-symbol { font-weight: 800; font-size: 0.9rem; }
+.mover-price {
+  display: block;
+  color: var(--muted);
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 0.78rem;
+  margin-top: 0.15rem;
+}
+.mover-change { font-weight: 800; font-size: 0.85rem; }
+
+/* Activity feed: the scrolling tape. */
+.activity-feed {
+  display: grid;
+  gap: 0.35rem;
+  max-height: 420px;
+  overflow-y: auto;
+}
+.feed-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem;
+  align-items: baseline;
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.6rem;
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 0.85rem;
+  animation: feed-in 0.35s ease;
+}
+.feed-item .feed-time {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.feed-item.sev-alert { background: rgba(255, 92, 122, 0.09); }
+.feed-item.sev-good { background: rgba(39, 245, 138, 0.07); }
+.feed-empty { color: var(--muted); font-size: 0.88rem; padding: 0.7rem; }
+@keyframes feed-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: none; }
+}
+.live-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--good);
+  box-shadow: 0 0 0 0 rgba(39, 245, 138, 0.6);
+  animation: pulse 2s infinite;
+  margin-top: 0.4rem;
+}
+@keyframes pulse {
+  70% { box-shadow: 0 0 0 8px rgba(39, 245, 138, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(39, 245, 138, 0); }
+}
+
+.home-standings { display: grid; gap: 0.3rem; }
+.standings-row {
+  display: grid;
+  grid-template-columns: 1.6rem 1fr auto auto;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.45rem 0.5rem;
+  border-radius: 0.55rem;
+  font-size: 0.87rem;
+}
+.standings-row.me { background: rgba(72, 215, 255, 0.09); outline: 1px solid rgba(72, 215, 255, 0.25); }
+.standings-rank { color: var(--muted); font-variant-numeric: tabular-nums; }
+.standings-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.standings-worth { font-family: "SFMono-Regular", Consolas, monospace; font-variant-numeric: tabular-nums; }
+
+/* Daily report: labelled rows, not a table — it reads better as a summary. */
+.daily-report { display: grid; gap: 0.45rem; }
+.report-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.88rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px dashed rgba(142, 160, 189, 0.16);
+}
+.report-row span { color: var(--muted); }
+.report-row strong { font-family: "SFMono-Regular", Consolas, monospace; font-variant-numeric: tabular-nums; }
+.report-empty { color: var(--muted); font-size: 0.88rem; }
+
+/* Alerts bell: a dropdown anchored to the header button. */
+.alert-wrap { position: relative; }
+.alert-bell { position: relative; padding: 0.5rem 0.7rem; }
+.alert-count {
+  position: absolute;
+  top: -0.3rem;
+  right: -0.3rem;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding: 0 0.25rem;
+  border-radius: 999px;
+  background: var(--bad);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 900;
+  line-height: 1.1rem;
+  text-align: center;
+}
+.alert-panel {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  z-index: 20;
+  width: min(360px, calc(100vw - 2rem));
+  max-height: 340px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  padding: 0.7rem;
+  background: rgba(13, 23, 39, 0.98);
+  box-shadow: var(--shadow);
+}
+.alert-head {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.2rem 0.3rem 0.6rem;
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.alert-list { display: grid; gap: 0.35rem; }
+.alert-item {
+  border-left: 3px solid var(--warn);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.6rem;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.84rem;
+}
+.alert-item.danger { border-left-color: var(--bad); }
+.alert-item .alert-time { display: block; color: var(--muted); font-size: 0.7rem; margin-top: 0.2rem; }
+
+/* Sparklines inside the market table. */
+.trend-col { width: 7rem; }
+.spark { display: block; width: 92px; height: 26px; }
+.spark-empty { color: var(--muted); font-size: 0.72rem; }
+
+@media (max-width: 1000px) {
+  .dashboard-grid, .report-grid { grid-template-columns: 1fr; }
+  .activity-feed { max-height: 300px; }
+}
+
+@media (max-width: 860px) {
+  .leverage-row { grid-template-columns: 1fr; }
+  .leverage-row strong { text-align: left; }
+  .season-countdown { margin-left: 0; }
+  .alert-panel { right: auto; left: 0; }
+}
+
 .toast-region {
   position: fixed;
   top: 1rem;
@@ -378,6 +697,7 @@ button {
   .tabs { padding: 0.2rem; }
   .tab-button { flex: 1 0 auto; }
   .chart-box { height: 320px; }
+  .header-actions { justify-content: flex-end; }
 }
 
 @media (max-width: 560px) {

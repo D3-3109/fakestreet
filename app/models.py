@@ -32,3 +32,15 @@ class AddAssetRequest(BaseModel):
     symbol: str
     provider_id: str | None = None
     name: str | None = None
+
+
+class OpenPositionRequest(BaseModel):
+    symbol: str
+    kind: str = "perp"            # 'perp' | 'future'
+    direction: str                # 'long' | 'short'
+    size: float
+    leverage: float = 5.0
+
+
+class AddMarginRequest(BaseModel):
+    amount: float

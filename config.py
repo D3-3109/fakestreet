@@ -27,6 +27,51 @@ DB_PATH = _env("TRADING_GAME_DB", "trading_game.db")                 # sqlite fi
 HOST = _env("TRADING_GAME_HOST", "0.0.0.0")                          # bind on all interfaces for the local network
 PORT = int(_env("TRADING_GAME_PORT", 8000))
 
+# --- Derivatives -------------------------------------------------------------
+# Leveraged positions are isolated-margin: the margin posted is the most a
+# position can lose, so one blow-up cannot drag a player's cash below zero.
+#
+# MAX_LEVERAGE = 0 means no cap: the only limit is MIN_POSITION_MARGIN, which
+# keeps the margin above float noise. At that limit a position is 100%+ gone on
+# a rounding-error price move, which is the point.
+MAX_LEVERAGE = int(_env("TRADING_GAME_MAX_LEVERAGE", 0))
+DEFAULT_LEVERAGE = int(_env("TRADING_GAME_DEFAULT_LEVERAGE", 10))
+# Liquidation fires when equity falls to this percentage of posted margin.
+# 0 means a position is wiped out completely: the entire margin is lost.
+# Raising it leaves a cushion (50 = liquidate after losing half the margin).
+MAINTENANCE_MARGIN_PCT = float(_env("TRADING_GAME_MAINTENANCE_MARGIN", 0.0))
+# Smallest margin a position may post. This is what actually bounds leverage:
+# notional / MIN_POSITION_MARGIN is the highest usable multiple.
+MIN_POSITION_MARGIN = float(_env("TRADING_GAME_MIN_MARGIN", 0.01))
+FUNDING_INTERVAL_SECONDS = int(_env("TRADING_GAME_FUNDING_INTERVAL", 300))     # perp funding every 5 min
+FUNDING_RATE_CAP = float(_env("TRADING_GAME_FUNDING_CAP", 0.003))              # max 0.3% per interval
+# Liquidation has to feel immediate, so the sweep runs far more often than the
+# price cache refreshes; it reuses the cached quote and costs almost nothing.
+POSITION_MONITOR_SECONDS = int(_env("TRADING_GAME_MONITOR_INTERVAL", 2))
+FUTURE_DURATION_SECONDS = int(_env("TRADING_GAME_FUTURE_DURATION", 3600))      # dated futures settle in 1h
+
+# Contract sizes keep notional readable: one contract of an expensive stock
+# would otherwise be an all-or-nothing bet. Notional = size * price * multiplier.
+CONTRACT_MULTIPLIERS = {
+    "stock": 1.0,
+    "crypto": 1.0,
+    "fiat": 1000.0,   # FX is quoted per unit; 1000 units makes 1 contract ~$1000 notional
+}
+
+# --- Seasons and sampling ----------------------------------------------------
+# A season is a fixed window; when it ends the standings are archived and every
+# account resets to STARTING_CASH. Weekly by default, matching how a group of
+# friends actually plays (a weekend, maybe a few evenings).
+SEASON_LENGTH_DAYS = int(_env("TRADING_GAME_SEASON_DAYS", 7))
+# How often the sampler records prices, the index, and every player's equity.
+# 5 minutes gives 288 points a day: enough for a smooth equity curve and a daily
+# report without making the database big.
+SNAPSHOT_INTERVAL_SECONDS = int(_env("TRADING_GAME_SNAPSHOT_INTERVAL", 300))
+# Samples older than this are deleted by the sampler.
+SNAPSHOT_RETENTION_DAYS = int(_env("TRADING_GAME_SNAPSHOT_RETENTION", 30))
+# Margin ratio below which a player gets a warning event (percent of margin left).
+MARGIN_WARN_PERCENT = float(_env("TRADING_GAME_MARGIN_WARN", 80.0))
+
 # --- Asset universe ----------------------------------------------------------
 # provider_id is what the underlying data provider expects:
 #   stock -> Yahoo Finance ticker (e.g. "AAPL")

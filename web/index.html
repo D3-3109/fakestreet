@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>LAN Trading Desk</title>
+  <title data-i18n="appName">LAN Trading Desk</title>
   <link rel="stylesheet" href="/style.css">
 </head>
 <body>
@@ -11,39 +11,40 @@
 
   <main id="start-screen" class="start-screen">
     <section class="hero-card">
-      <p class="eyebrow">Local paper trading league</p>
-      <h1>Turn virtual cash into bragging rights.</h1>
-      <p class="hero-copy">Sign in, watch live markets move, and climb the leaderboard from any device on the LAN.</p>
-      <div class="auth-tabs" role="tablist" aria-label="Account options">
-        <button class="auth-tab active" data-auth-mode="signin" type="button">Sign in</button>
-        <button class="auth-tab" data-auth-mode="register" type="button">Create account</button>
-        <button class="auth-tab" data-auth-mode="recover" type="button">Forgot password</button>
+      <button class="ghost-button lang-toggle" data-lang-toggle type="button">EN</button>
+      <p class="eyebrow" data-i18n="start.eyebrow">Local paper trading league</p>
+      <h1 data-i18n="start.title">Turn virtual cash into bragging rights.</h1>
+      <p class="hero-copy" data-i18n="start.copy">Sign in, watch live markets move, and climb the leaderboard from any device on the LAN.</p>
+      <div class="auth-tabs" role="tablist" data-i18n-aria="start.accountOptions">
+        <button class="auth-tab active" data-auth-mode="signin" type="button" data-i18n="start.tab.signin">Sign in</button>
+        <button class="auth-tab" data-auth-mode="register" type="button" data-i18n="start.tab.register">Create account</button>
+        <button class="auth-tab" data-auth-mode="recover" type="button" data-i18n="start.tab.recover">Forgot password</button>
       </div>
       <form id="signin-form" class="login-form auth-form" data-auth-form="signin">
-        <label for="signin-username">Trader name</label>
-        <input id="signin-username" name="username" maxlength="40" autocomplete="username" placeholder="e.g. rocketbadger" required>
-        <label for="signin-password">Password</label>
+        <label for="signin-username" data-i18n="form.traderName">Trader name</label>
+        <input id="signin-username" name="username" maxlength="40" autocomplete="username" data-i18n-placeholder="form.traderNamePlaceholder" placeholder="e.g. rocketbadger" required>
+        <label for="signin-password" data-i18n="form.password">Password</label>
         <input id="signin-password" name="password" type="password" autocomplete="current-password" minlength="4" required>
-        <button type="submit">Sign in</button>
+        <button type="submit" data-i18n="start.tab.signin">Sign in</button>
       </form>
       <form id="register-form" class="login-form auth-form hidden" data-auth-form="register">
-        <label for="register-username">Trader name</label>
-        <input id="register-username" name="username" maxlength="40" autocomplete="username" placeholder="e.g. rocketbadger" required>
-        <label for="register-password">Password</label>
+        <label for="register-username" data-i18n="form.traderName">Trader name</label>
+        <input id="register-username" name="username" maxlength="40" autocomplete="username" data-i18n-placeholder="form.traderNamePlaceholder" placeholder="e.g. rocketbadger" required>
+        <label for="register-password" data-i18n="form.password">Password</label>
         <input id="register-password" name="password" type="password" autocomplete="new-password" minlength="4" required>
-        <label for="register-recovery">Memorable word (for password recovery)</label>
+        <label for="register-recovery" data-i18n="form.recoveryWord">Memorable word (for password recovery)</label>
         <input id="register-recovery" name="recovery_word" autocomplete="off" required>
-        <p class="auth-note">This word is the only way to recover a forgotten password. Pick something you'll remember.</p>
-        <button type="submit">Create account</button>
+        <p class="auth-note" data-i18n="form.recoveryNote">This word is the only way to recover a forgotten password. Pick something you'll remember.</p>
+        <button type="submit" data-i18n="form.createAccount">Create account</button>
       </form>
       <form id="recover-form" class="login-form auth-form hidden" data-auth-form="recover">
-        <label for="recover-username">Trader name</label>
+        <label for="recover-username" data-i18n="form.traderName">Trader name</label>
         <input id="recover-username" name="username" maxlength="40" autocomplete="username" required>
-        <label for="recover-word">Memorable word</label>
+        <label for="recover-word" data-i18n="form.recoveryWordShort">Memorable word</label>
         <input id="recover-word" name="recovery_word" autocomplete="off" required>
-        <label for="recover-password">New password</label>
+        <label for="recover-password" data-i18n="form.newPassword">New password</label>
         <input id="recover-password" name="new_password" type="password" autocomplete="new-password" minlength="4" required>
-        <button type="submit">Reset password</button>
+        <button type="submit" data-i18n="form.resetPassword">Reset password</button>
       </form>
       <p id="auth-status" class="form-status" role="status"></p>
     </section>
@@ -52,78 +53,257 @@
   <div id="app-shell" class="app-shell hidden">
     <header class="desk-header">
       <div>
-        <p class="eyebrow">Trading desk</p>
+        <p class="eyebrow" data-i18n="app.tradingDesk">Trading desk</p>
         <h1 id="player-name">Trader</h1>
       </div>
-      <section class="summary-grid" aria-label="Account summary">
-        <div class="summary-card"><span>Cash</span><strong id="summary-cash">--</strong></div>
-        <div class="summary-card"><span>Net worth</span><strong id="summary-net-worth">--</strong></div>
-        <div class="summary-card"><span>Total P/L</span><strong id="summary-pl">--</strong></div>
+      <section class="summary-grid" data-i18n-aria="summary.accountSummary">
+        <div class="summary-card"><span data-i18n="summary.cash">Cash</span><strong id="summary-cash">--</strong></div>
+        <div class="summary-card"><span data-i18n="summary.netWorth">Net worth</span><strong id="summary-net-worth">--</strong></div>
+        <div class="summary-card"><span data-i18n="summary.pl">Total P/L</span><strong id="summary-pl">--</strong></div>
       </section>
-      <button id="switch-player" class="ghost-button" type="button">Log out</button>
+      <div class="header-actions">
+        <div class="alert-wrap">
+          <button id="alert-bell" class="ghost-button alert-bell" type="button" aria-label="Alerts" data-i18n-aria="alerts.title">
+            <span aria-hidden="true">🔔</span><span id="alert-count" class="alert-count hidden">0</span>
+          </button>
+          <div id="alert-panel" class="alert-panel hidden">
+            <div class="alert-head"><strong data-i18n="alerts.title">Alerts</strong></div>
+            <div id="alert-list" class="alert-list"></div>
+          </div>
+        </div>
+        <button class="ghost-button lang-toggle" data-lang-toggle type="button">EN</button>
+        <button id="switch-player" class="ghost-button" type="button" data-i18n="app.logout">Log out</button>
+      </div>
     </header>
 
-    <nav class="tabs" aria-label="Main sections">
-      <button class="tab-button active" data-tab="market" type="button">Market</button>
-      <button class="tab-button" data-tab="portfolio" type="button">Portfolio</button>
-      <button class="tab-button" data-tab="history" type="button">History</button>
-      <button class="tab-button" data-tab="leaderboard" type="button">Leaderboard</button>
+    <nav class="tabs" data-i18n-aria="nav.mainSections">
+      <button class="tab-button active" data-tab="home" type="button" data-i18n="tab.home">Home</button>
+      <button class="tab-button" data-tab="market" type="button" data-i18n="tab.market">Market</button>
+      <button class="tab-button" data-tab="portfolio" type="button" data-i18n="tab.portfolio">Portfolio</button>
+      <button class="tab-button" data-tab="derivatives" type="button" data-i18n="tab.derivatives">Derivatives</button>
+      <button class="tab-button" data-tab="history" type="button" data-i18n="tab.history">History</button>
+      <button class="tab-button" data-tab="leaderboard" type="button" data-i18n="tab.leaderboard">Leaderboard</button>
     </nav>
 
-    <section id="market" class="tab-panel active" aria-labelledby="Market">
-      <div class="panel-heading">
-        <div>
-          <p class="eyebrow">Live universe</p>
-          <h2>Market</h2>
+    <section id="home" class="tab-panel active" aria-labelledby="Home">
+      <div id="season-bar" class="season-bar">
+        <div class="season-info">
+          <span class="season-label" data-i18n="home.season">Season</span>
+          <strong id="season-name">—</strong>
+          <span id="season-countdown" class="season-countdown">—</span>
         </div>
-        <div class="market-toolbar">
-          <div id="asset-filters" class="pill-group" aria-label="Asset class filter">
-            <button class="pill active" data-filter="all" type="button">All</button>
-            <button class="pill" data-filter="stock" type="button">Stocks</button>
-            <button class="pill" data-filter="crypto" type="button">Crypto</button>
-            <button class="pill" data-filter="fiat" type="button">FIAT</button>
+        <div id="season-progress" class="season-progress"><div id="season-progress-fill"></div></div>
+      </div>
+
+      <div class="dashboard-grid">
+        <div class="dash-main">
+          <div class="dash-card">
+            <div class="dash-head">
+              <div>
+                <p class="eyebrow" data-i18n="home.indexEyebrow">Market index</p>
+                <h2 id="index-title">—</h2>
+              </div>
+              <div class="index-quote">
+                <strong id="index-value">—</strong>
+                <span id="index-change">—</span>
+              </div>
+            </div>
+            <div class="index-chart-box"><canvas id="index-chart"></canvas></div>
+            <div id="index-ranges" class="pill-group compact">
+              <button class="pill active" data-index-range="24" type="button">24h</button>
+              <button class="pill" data-index-range="72" type="button">3d</button>
+              <button class="pill" data-index-range="168" type="button">7d</button>
+            </div>
           </div>
-          <button id="add-asset-open" class="ghost-button add-asset-button" type="button">＋ Add asset</button>
+
+          <div class="dash-card">
+            <div class="dash-head">
+              <div>
+                <p class="eyebrow" data-i18n="home.moversEyebrow">Board movers</p>
+                <h2 data-i18n="home.movers">Top movers</h2>
+              </div>
+            </div>
+            <div id="movers" class="movers-grid"></div>
+          </div>
+        </div>
+
+        <div class="dash-side">
+          <div class="dash-card">
+            <div class="dash-head">
+              <div>
+                <p class="eyebrow" data-i18n="home.feedEyebrow">Live tape</p>
+                <h2 data-i18n="home.feed">Activity</h2>
+              </div>
+              <span id="feed-live" class="live-dot" title="live"></span>
+            </div>
+            <div id="activity-feed" class="activity-feed"></div>
+          </div>
+
+          <div class="dash-card">
+            <div class="dash-head">
+              <div>
+                <p class="eyebrow" data-i18n="home.standingsEyebrow">This season</p>
+                <h2 data-i18n="home.standings">Standings</h2>
+              </div>
+            </div>
+            <div id="home-standings" class="home-standings"></div>
+          </div>
         </div>
       </div>
-      <div id="market-status" class="inline-status">Loading market...</div>
+    </section>
+
+    <section id="market" class="tab-panel" aria-labelledby="Market">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow" data-i18n="market.eyebrow">Live universe</p>
+          <h2 data-i18n="market.title">Market</h2>
+        </div>
+        <div class="market-toolbar">
+          <div id="asset-filters" class="pill-group" data-i18n-aria="market.filterLabel">
+            <button class="pill active" data-filter="all" type="button" data-i18n="market.all">All</button>
+            <button class="pill" data-filter="stock" type="button" data-i18n="market.stocks">Stocks</button>
+            <button class="pill" data-filter="crypto" type="button" data-i18n="market.crypto">Crypto</button>
+            <button class="pill" data-filter="fiat" type="button" data-i18n="market.fiat">FIAT</button>
+          </div>
+          <button id="add-asset-open" class="ghost-button add-asset-button" type="button" data-i18n="market.addAsset">＋ Add asset</button>
+        </div>
+      </div>
+      <div id="market-status" class="inline-status" data-i18n="market.loading">Loading market...</div>
       <div class="table-wrap">
         <table class="data-table">
-          <thead><tr><th>Asset</th><th>Price</th><th>Change</th><th class="actions-col">Actions</th></tr></thead>
+          <thead><tr><th data-i18n="table.asset">Asset</th><th data-i18n="table.price">Price</th><th data-i18n="table.change">Change</th><th class="trend-col" data-i18n="table.trend">24h</th><th class="actions-col" data-i18n="table.actions">Actions</th></tr></thead>
           <tbody id="market-body"></tbody>
         </table>
       </div>
     </section>
 
     <section id="portfolio" class="tab-panel" aria-labelledby="Portfolio">
-      <div class="panel-heading"><div><p class="eyebrow">Positions</p><h2>Portfolio</h2></div></div>
+      <div class="panel-heading"><div><p class="eyebrow" data-i18n="portfolio.eyebrow">Positions</p><h2 data-i18n="portfolio.title">Portfolio</h2></div></div>
       <div id="portfolio-summary" class="portfolio-summary"></div>
-      <div id="portfolio-empty" class="empty-state hidden">You don't own anything yet. Head to the Market and make your first move.</div>
+
+      <div class="report-grid">
+        <div class="dash-card">
+          <div class="dash-head">
+            <div>
+              <p class="eyebrow" data-i18n="report.eyebrow">Performance</p>
+              <h2 data-i18n="report.equity">Equity curve</h2>
+            </div>
+            <div id="equity-ranges" class="pill-group compact">
+              <button class="pill active" data-equity-range="24" type="button">24h</button>
+              <button class="pill" data-equity-range="168" type="button">7d</button>
+            </div>
+          </div>
+          <div class="equity-chart-box"><canvas id="equity-chart"></canvas></div>
+        </div>
+
+        <div class="dash-card">
+          <div class="dash-head">
+            <div>
+              <p class="eyebrow" data-i18n="report.eyebrow">Performance</p>
+              <h2 data-i18n="report.daily">Daily report</h2>
+            </div>
+          </div>
+          <div id="daily-report" class="daily-report"></div>
+        </div>
+      </div>
+
+      <div id="portfolio-empty" class="empty-state hidden" data-i18n="portfolio.empty">You don't own anything yet. Head to the Market and make your first move.</div>
       <div class="table-wrap">
         <table class="data-table dense">
-          <thead><tr><th>Asset</th><th>Qty</th><th>Avg cost</th><th>Price</th><th>Value</th><th>P/L</th><th class="actions-col">Actions</th></tr></thead>
+          <thead><tr><th data-i18n="table.asset">Asset</th><th data-i18n="table.qty">Qty</th><th data-i18n="table.avgCost">Avg cost</th><th data-i18n="table.price">Price</th><th data-i18n="table.value">Value</th><th data-i18n="table.pl">P/L</th><th class="actions-col" data-i18n="table.actions">Actions</th></tr></thead>
           <tbody id="holdings-body"></tbody>
         </table>
       </div>
     </section>
 
-    <section id="history" class="tab-panel" aria-labelledby="History">
-      <div class="panel-heading"><div><p class="eyebrow">Ledger</p><h2>History</h2></div></div>
-      <div id="history-empty" class="empty-state hidden">No trades yet. The ledger is waiting.</div>
+    <section id="derivatives" class="tab-panel" aria-labelledby="Derivatives">
+      <div class="panel-heading">
+        <div>
+          <p class="eyebrow" data-i18n="deriv.eyebrow">Margin desk</p>
+          <h2 data-i18n="deriv.title">Derivatives</h2>
+        </div>
+        <button id="deriv-open-new" class="ghost-button" type="button" data-i18n="deriv.openNew">＋ Open position</button>
+      </div>
+      <div id="deriv-summary" class="portfolio-summary"></div>
+      <div id="deriv-status" class="inline-status"></div>
+      <div id="deriv-empty" class="empty-state hidden">
+        <p data-i18n="deriv.noPositions">No open positions.</p>
+        <p class="auth-note" data-i18n="deriv.emptyHint"></p>
+      </div>
       <div class="table-wrap">
         <table class="data-table dense">
-          <thead><tr><th>Time</th><th>Side</th><th>Symbol</th><th>Qty</th><th>Price</th><th>Total</th></tr></thead>
+          <thead><tr>
+            <th data-i18n="deriv.table.position">Position</th>
+            <th data-i18n="deriv.table.size">Size</th>
+            <th data-i18n="deriv.table.entry">Entry</th>
+            <th data-i18n="deriv.table.mark">Mark</th>
+            <th data-i18n="deriv.table.liq">Liq.</th>
+            <th data-i18n="deriv.table.margin">Margin</th>
+            <th data-i18n="deriv.table.pl">P/L</th>
+            <th data-i18n="deriv.table.ratio">Ratio</th>
+            <th data-i18n="deriv.table.funding">Funding</th>
+            <th class="actions-col" data-i18n="deriv.actions">Actions</th>
+          </tr></thead>
+          <tbody id="deriv-body"></tbody>
+        </table>
+      </div>
+
+      <div class="panel-heading sub-heading">
+        <div><h3 data-i18n="deriv.fundingHistory">Funding payments</h3></div>
+        <button id="deriv-toggle-closed" class="ghost-button" type="button" data-i18n="deriv.showClosed">Show closed</button>
+      </div>
+      <div id="deriv-funding-empty" class="empty-state hidden" data-i18n="deriv.noFunding">No funding charged yet.</div>
+      <div class="table-wrap">
+        <table class="data-table dense">
+          <thead><tr>
+            <th data-i18n="table.time">Time</th>
+            <th data-i18n="table.symbol">Symbol</th>
+            <th data-i18n="deriv.direction">Direction</th>
+            <th data-i18n="deriv.funding">Funding</th>
+            <th data-i18n="table.price">Price</th>
+          </tr></thead>
+          <tbody id="deriv-funding-body"></tbody>
+        </table>
+      </div>
+
+      <div id="deriv-closed-section" class="hidden">
+        <div class="panel-heading sub-heading">
+          <div><h3 data-i18n="deriv.closedPositions">Closed positions</h3></div>
+        </div>
+        <div id="deriv-closed-empty" class="empty-state hidden" data-i18n="deriv.noClosed">Nothing closed yet.</div>
+        <div class="table-wrap">
+          <table class="data-table dense">
+            <thead><tr>
+              <th data-i18n="deriv.table.position">Position</th>
+              <th data-i18n="deriv.table.size">Size</th>
+              <th data-i18n="deriv.table.entry">Entry</th>
+              <th data-i18n="deriv.table.mark">Mark</th>
+              <th data-i18n="deriv.table.margin">Margin</th>
+              <th data-i18n="table.pl">P/L</th>
+            </tr></thead>
+            <tbody id="deriv-closed-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="history" class="tab-panel" aria-labelledby="History">
+      <div class="panel-heading"><div><p class="eyebrow" data-i18n="history.eyebrow">Ledger</p><h2 data-i18n="history.title">History</h2></div></div>
+      <div id="history-empty" class="empty-state hidden" data-i18n="history.empty">No trades yet. The ledger is waiting.</div>
+      <div class="table-wrap">
+        <table class="data-table dense">
+          <thead><tr><th data-i18n="table.time">Time</th><th data-i18n="table.side">Side</th><th data-i18n="table.symbol">Symbol</th><th data-i18n="table.qty">Qty</th><th data-i18n="table.price">Price</th><th data-i18n="table.total">Total</th></tr></thead>
           <tbody id="history-body"></tbody>
         </table>
       </div>
     </section>
 
     <section id="leaderboard" class="tab-panel" aria-labelledby="Leaderboard">
-      <div class="panel-heading"><div><p class="eyebrow">Local league</p><h2>Leaderboard</h2></div></div>
-      <div id="leaderboard-empty" class="empty-state hidden">No ranked players yet.</div>
+      <div class="panel-heading"><div><p class="eyebrow" data-i18n="leaderboard.eyebrow">Local league</p><h2 data-i18n="leaderboard.title">Leaderboard</h2></div></div>
+      <div id="leaderboard-empty" class="empty-state hidden" data-i18n="leaderboard.empty">No ranked players yet.</div>
       <div class="table-wrap">
         <table class="data-table dense">
-          <thead><tr><th>Rank</th><th>Trader</th><th>Net worth</th><th>Total P/L</th></tr></thead>
+          <thead><tr><th data-i18n="table.rank">Rank</th><th data-i18n="table.trader">Trader</th><th data-i18n="table.netWorth">Net worth</th><th data-i18n="table.totalPl">Total P/L</th></tr></thead>
           <tbody id="leaderboard-body"></tbody>
         </table>
       </div>
@@ -132,24 +312,24 @@
 
   <div id="trade-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="trade-title">
     <div class="modal-card trade-card">
-      <button class="close-button" data-close="trade" type="button" aria-label="Close trade panel">×</button>
-      <p class="eyebrow">Order ticket</p>
-      <h2 id="trade-title">Trade</h2>
+      <button class="close-button" data-close="trade" type="button" data-i18n-aria="trade.close" aria-label="Close trade panel">×</button>
+      <p class="eyebrow" data-i18n="trade.eyebrow">Order ticket</p>
+      <h2 id="trade-title" data-i18n="trade.title">Trade</h2>
       <form id="trade-form" class="trade-form">
-        <label for="trade-symbol">Asset</label>
+        <label for="trade-symbol" data-i18n="trade.asset">Asset</label>
         <select id="trade-symbol" name="symbol" required></select>
-        <div class="toggle-row" aria-label="Trade side">
-          <button class="side-toggle active" data-side="buy" type="button">Buy</button>
-          <button class="side-toggle" data-side="sell" type="button">Sell</button>
+        <div class="toggle-row" data-i18n-aria="trade.side">
+          <button class="side-toggle active" data-side="buy" type="button" data-i18n="trade.buy">Buy</button>
+          <button class="side-toggle" data-side="sell" type="button" data-i18n="trade.sell">Sell</button>
         </div>
-        <label for="trade-quantity">Quantity</label>
+        <label for="trade-quantity" data-i18n="trade.quantity">Quantity</label>
         <input id="trade-quantity" name="quantity" type="number" step="any" min="0" inputmode="decimal" placeholder="0.5" required>
         <div class="estimate-box">
-          <span>Estimated total</span>
+          <span data-i18n="trade.estimatedTotal">Estimated total</span>
           <strong id="trade-estimate">$0.00</strong>
           <small id="trade-price-note"></small>
         </div>
-        <button id="trade-submit" type="submit">Submit order</button>
+        <button id="trade-submit" type="submit" data-i18n="trade.submitBuy">Submit order</button>
         <p id="trade-message" class="form-status" role="status"></p>
       </form>
     </div>
@@ -157,23 +337,23 @@
 
   <div id="add-asset-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="add-asset-title">
     <div class="modal-card add-asset-card">
-      <button class="close-button" data-close="add-asset" type="button" aria-label="Close add asset panel">×</button>
-      <p class="eyebrow">Expand the market</p>
-      <h2 id="add-asset-title">Add your own asset</h2>
-      <div id="add-asset-classes" class="toggle-row asset-class-toggle" aria-label="Asset class">
-        <button class="side-toggle active" data-add-class="stock" type="button">Stock</button>
-        <button class="side-toggle" data-add-class="crypto" type="button">Crypto</button>
-        <button class="side-toggle" data-add-class="fiat" type="button">FIAT</button>
+      <button class="close-button" data-close="add-asset" type="button" data-i18n-aria="addAsset.close" aria-label="Close add asset panel">×</button>
+      <p class="eyebrow" data-i18n="addAsset.eyebrow">Expand the market</p>
+      <h2 id="add-asset-title" data-i18n="addAsset.title">Add your own asset</h2>
+      <div id="add-asset-classes" class="toggle-row asset-class-toggle" data-i18n-aria="addAsset.classLabel">
+        <button class="side-toggle active" data-add-class="stock" type="button" data-i18n="addAsset.stock">Stock</button>
+        <button class="side-toggle" data-add-class="crypto" type="button" data-i18n="addAsset.crypto">Crypto</button>
+        <button class="side-toggle" data-add-class="fiat" type="button" data-i18n="addAsset.fiat">FIAT</button>
       </div>
       <form id="add-asset-form" class="trade-form add-asset-form">
-        <label id="add-asset-query-label" for="add-asset-query">Ticker (e.g. BABA)</label>
+        <label id="add-asset-query-label" for="add-asset-query" data-i18n="addAsset.stockLabel">Ticker (e.g. BABA)</label>
         <div class="search-row">
-          <input id="add-asset-query" name="query" autocomplete="off" placeholder="BABA" required>
-          <button id="add-asset-search" class="ghost-button" type="button">Search</button>
+          <input id="add-asset-query" name="query" autocomplete="off" data-i18n-placeholder="addAsset.stockPlaceholder" placeholder="BABA" required>
+          <button id="add-asset-search" class="ghost-button" type="button" data-i18n="addAsset.search">Search</button>
         </div>
-        <p id="add-asset-help" class="auth-note">Enter a ticker and add it directly.</p>
-        <div id="add-asset-results" class="search-results hidden" role="listbox" aria-label="Asset search results"></div>
-        <button id="add-asset-submit" type="submit">Add stock</button>
+        <p id="add-asset-help" class="auth-note" data-i18n="addAsset.stockHelp">Enter a ticker and add it directly.</p>
+        <div id="add-asset-results" class="search-results hidden" role="listbox" data-i18n-aria="addAsset.resultsLabel"></div>
+        <button id="add-asset-submit" type="submit" data-i18n="addAsset.stockSubmit">Add stock</button>
         <p id="add-asset-message" class="form-status" role="status"></p>
       </form>
     </div>
@@ -181,10 +361,10 @@
 
   <div id="chart-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="chart-title">
     <div class="modal-card chart-card">
-      <button class="close-button" data-close="chart" type="button" aria-label="Close chart">×</button>
+      <button class="close-button" data-close="chart" type="button" data-i18n-aria="chart.close" aria-label="Close chart">×</button>
       <div class="panel-heading chart-heading">
-        <div><p class="eyebrow">Price history</p><h2 id="chart-title">Chart</h2></div>
-        <div id="range-buttons" class="pill-group compact">
+        <div><p class="eyebrow" data-i18n="chart.eyebrow">Price history</p><h2 id="chart-title" data-i18n="chart.title">Chart</h2></div>
+        <div id="range-buttons" class="pill-group compact" data-i18n-aria="chart.rangeLabel">
           <button class="pill" data-range="1d" type="button">1d</button>
           <button class="pill" data-range="5d" type="button">5d</button>
           <button class="pill active" data-range="1mo" type="button">1mo</button>
@@ -192,12 +372,77 @@
           <button class="pill" data-range="1y" type="button">1y</button>
         </div>
       </div>
-      <div id="chart-status" class="inline-status">Loading chart...</div>
+      <div id="chart-status" class="inline-status" data-i18n="chart.loading">Loading chart...</div>
       <div class="chart-box"><canvas id="price-chart"></canvas></div>
     </div>
   </div>
 
+  <div id="deriv-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="deriv-title">
+    <div class="modal-card trade-card">
+      <button class="close-button" data-close="deriv" type="button" data-i18n-aria="deriv.closePanel" aria-label="Close position panel">×</button>
+      <p class="eyebrow" data-i18n="deriv.eyebrow">Margin desk</p>
+      <h2 id="deriv-title" data-i18n="deriv.openTitle">Open a position</h2>
+      <form id="deriv-form" class="trade-form">
+        <label for="deriv-symbol" data-i18n="trade.asset">Asset</label>
+        <select id="deriv-symbol" name="symbol" required></select>
+
+        <label data-i18n="deriv.direction">Direction</label>
+        <div class="toggle-row" data-i18n-aria="deriv.direction">
+          <button class="side-toggle active" data-deriv-direction="long" type="button" data-i18n="deriv.long">Long</button>
+          <button class="side-toggle" data-deriv-direction="short" type="button" data-i18n="deriv.short">Short</button>
+        </div>
+
+        <label data-i18n="deriv.kind">Instrument</label>
+        <div class="toggle-row" data-i18n-aria="deriv.kind">
+          <button class="side-toggle active" data-deriv-kind="perp" type="button" data-i18n="deriv.perp">Perpetual</button>
+          <button class="side-toggle" data-deriv-kind="future" type="button" data-i18n="deriv.future">Future</button>
+        </div>
+        <p id="deriv-kind-note" class="auth-note"></p>
+
+        <label for="deriv-leverage" data-i18n="deriv.leverage">Leverage</label>
+        <div class="leverage-row">
+          <input id="deriv-leverage" name="leverage" type="number" step="any" min="1" inputmode="decimal" value="10" required>
+          <div id="leverage-presets" class="pill-group compact">
+            <button class="pill" data-leverage-preset="10" type="button">10x</button>
+            <button class="pill" data-leverage-preset="100" type="button">100x</button>
+            <button class="pill" data-leverage-preset="1000" type="button">1000x</button>
+            <button class="pill" data-leverage-preset="10000" type="button">10000x</button>
+          </div>
+        </div>
+        <p id="deriv-leverage-hint" class="auth-note"></p>
+
+        <label for="deriv-size" data-i18n="deriv.size">Size</label>
+        <input id="deriv-size" name="size" type="number" step="any" min="0" inputmode="decimal" placeholder="1" required>
+
+        <div class="estimate-box">
+          <span data-i18n="deriv.notional">Notional</span>
+          <strong id="deriv-notional">$0.00</strong>
+          <small id="deriv-margin-est"></small>
+          <small id="deriv-liq-est"></small>
+          <small id="deriv-funding-est"></small>
+        </div>
+        <button id="deriv-submit" type="submit" data-i18n="deriv.submitOpen">Open position</button>
+        <p id="deriv-message" class="form-status" role="status"></p>
+      </form>
+    </div>
+  </div>
+
+  <div id="margin-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="margin-title">
+    <div class="modal-card trade-card">
+      <button class="close-button" data-close="margin" type="button" aria-label="Close">×</button>
+      <p class="eyebrow" data-i18n="deriv.eyebrow">Margin desk</p>
+      <h2 id="margin-title"></h2>
+      <form id="margin-form" class="trade-form">
+        <label for="margin-amount" data-i18n="deriv.addMarginAmount">Amount</label>
+        <input id="margin-amount" name="amount" type="number" step="any" min="0" inputmode="decimal" placeholder="100" required>
+        <button id="margin-submit" type="submit" data-i18n="deriv.addMarginSubmit">Add margin</button>
+        <p id="margin-message" class="form-status" role="status"></p>
+      </form>
+    </div>
+  </div>
+
   <script src="/vendor/chart.umd.min.js"></script>
+  <script src="/i18n.js"></script>
   <script src="/app.js"></script>
 </body>
 </html>

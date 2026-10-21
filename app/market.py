@@ -98,6 +98,18 @@ class MarketService:
             row["fetched_at"] = 0.0
         self._ensure_prices([a["symbol"] for a in registry.all_assets()], force=True)
 
+    def refresh_symbols(self, symbols: List[str]) -> None:
+        """Force a refetch for specific symbols only.
+
+        The liquidation sweep calls this for positions near their stop: at high
+        leverage an entire position can move past the stop inside one cache TTL,
+        and a stale quote would delay the liquidation by minutes.
+        """
+        wanted = [s for s in dict.fromkeys(symbols) if s]
+        if not wanted:
+            return
+        self._ensure_prices(wanted, force=True)
+
     def _assets_by_symbol(self) -> Dict[str, dict]:
         return {a["symbol"]: a for a in registry.all_assets()}
 
