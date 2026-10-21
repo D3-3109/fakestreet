@@ -1,0 +1,134 @@
+name: Tests
+
+# The smoke test exercises the API end to end: auth, spot trading, shorting,
+# leveraged open/close, liquidation, funding, season rollover, sampling, the
+# activity feed, and cross-account access checks.
+#
+# It runs in offline mode. The market layer normally calls Yahoo, CoinGecko and
+# the ECB, and those block or rate-limit datacenter IPs, which would make this
+# job fail for reasons unrelated to our code. TRADING_GAME_OFFLINE=1 swaps in
+# deterministic prices so the test measures settlement logic, not whether a
+# third party is reachable today.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.12']
+
+    env:
+      TRADING_GAME_OFFLINE: '1'
+      TRADING_GAME_DB: /tmp/trading_game.db
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Byte-compile every module
+        # Catches syntax errors in files the smoke test never imports.
+        run: python -m compileall -q app config.py scripts
+
+      - name: Start the server
+        run: |
+          set -euo pipefail
+          python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 \
+            > /tmp/server.log 2>&1 &
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:8000/api/health > /dev/null; then
+              echo "server up after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "server failed to start"
+          cat /tmp/server.log
+          exit 1
+
+      - name: Run smoke test
+        run: python scripts/smoke_test.py http://127.0.0.1:8000
+
+      - name: Server log on failure
+        if: failure()
+        run: cat /tmp/server.log
+
+  offline-provider:
+    # Guards the test double itself: if the stub drifts away from the real
+    # provider shape, the smoke job above would silently stop covering the
+    # market layer, so check the contract directly.
+    runs-on: ubuntu-latest
+    env:
+      TRADING_GAME_OFFLINE: '1'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Check the offline provider contract
+        run: |
+          python - <<'PY'
+          import sys
+          sys.path.insert(0, '.')
+
+          from app.providers import crypto, fiat, stocks
+          from app import registry
+
+          # Quote shape: {id: (price, prev_close)}, keyed exactly as passed in.
+          q = stocks.get_quotes(['AAPL', 'MSFT'])
+          assert set(q) == {'AAPL', 'MSFT'}, q
+          for price, prev in q.values():
+              assert price > 0 and prev > 0, (price, prev)
+
+          # Crypto is keyed by CoinGecko id, not the display symbol.
+          cq = crypto.get_quotes(['bitcoin', 'ethereum'])
+          assert set(cq) == {'bitcoin', 'ethereum'}, cq
+          assert cq['bitcoin'][0] > 1000, cq['bitcoin']
+
+          fq = fiat.get_quotes(['EUR', 'JPY'])
+          assert set(fq) == {'EUR', 'JPY'}, fq
+          for price, _ in fq.values():
+              assert 0 < price < 10, fq
+
+          # History must be a non-empty, time-ordered series.
+          for symbol in ('AAPL', 'BTC', 'EUR'):
+              points = registry.get_asset(symbol) and (
+                  stocks.get_history(symbol, '1mo') if symbol == 'AAPL'
+                  else crypto.get_history('bitcoin', '1mo') if symbol == 'BTC'
+                  else fiat.get_history('EUR', '1mo')
+              )
+              assert points, symbol
+              ts = [p[0] for p in points]
+              assert ts == sorted(ts), symbol
+              assert all(p[1] > 0 for p in points), symbol
+
+          # Search must find what the UI will search for.
+          assert any(r['symbol'] == 'AAPL' for r in stocks.search('AAP')), 'stock search'
+          assert any(r['provider_id'] == 'bitcoin' for r in crypto.search('bitcoin')), 'crypto search'
+          assert any(r['symbol'] == 'EUR' for r in fiat.search('eur')), 'fiat search'
+
+          print('offline provider contract OK')
+          PY

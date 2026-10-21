@@ -1,4 +1,5 @@
 .git
+.github
 .venv
 .venv/
 __pycache__
@@ -6,8 +7,12 @@ __pycache__
 *.pyc
 trading_game.db
 *.db
+*.sqlite3
 data/
 tmp/
 .env
 .DS_Store
 node_modules
+*.md
+!API_CONTRACT.md
+server*.log

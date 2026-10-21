@@ -1,0 +1,102 @@
+name: Docker
+
+# Builds the image on every push so a broken Dockerfile is caught immediately,
+# and publishes multi-arch tags to GHCR so anyone can `docker run` the result
+# without cloning the repo.
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      # Required by the provenance/SBOM attestations below.
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        # Needed to build the arm64 half of the multi-arch image on an amd64 runner.
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        # Only on pushes to main or a tag: PRs from forks get no credentials,
+        # and they do not need to publish anything.
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Derive image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          # Multi-arch needs the registry as the destination. On pull requests
+          # nothing is published, so build only the runner's own arch and load
+          # it locally for the smoke test below.
+          platforms: ${{ github.event_name == 'pull_request' && 'linux/amd64' || 'linux/amd64,linux/arm64' }}
+          push: ${{ github.event_name != 'pull_request' }}
+          load: ${{ github.event_name == 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: true
+          sbom: true
+
+      - name: Smoke-test the built image
+        # Runs the image the way a user would and checks the API answers. Kept
+        # in offline mode so this job never fails on a flaky market-data feed.
+        run: |
+          set -euo pipefail
+          docker run --rm -d --name tg-smoke \
+            -p 8000:8000 \
+            -e TRADING_GAME_OFFLINE=1 \
+            -e TRADING_GAME_DB=/app/data/trading_game.db \
+            "${REGISTRY}/${IMAGE_NAME}:sha-${GITHUB_SHA::7}"
+
+          for i in $(seq 1 40); do
+            if curl -fsS http://127.0.0.1:8000/api/health > /dev/null; then
+              echo "service is up after ${i}s"
+              break
+            fi
+            sleep 1
+          done
+
+          curl -fsS http://127.0.0.1:8000/api/health
+          echo
+          curl -fsS http://127.0.0.1:8000/api/assets | head -c 300
+          echo
+          curl -fsS http://127.0.0.1:8000/ | grep -qi "<!doctype" && echo "index served"
+          docker stop tg-smoke

@@ -1,5 +1,8 @@
 # Trading Game · 局域网交易台
 
+[![Tests](https://github.com/D3-3109/fakestreet/actions/workflows/tests.yml/badge.svg)](https://github.com/D3-3109/fakestreet/actions/workflows/tests.yml)
+[![Docker](https://github.com/D3-3109/fakestreet/actions/workflows/docker.yml/badge.svg)](https://github.com/D3-3109/fakestreet/actions/workflows/docker.yml)
+
 > 一个给几个朋友一起玩的模拟交易游戏：真实行情、虚拟资金、周赛季、杠杆与永续合约。
 >
 > **上游项目**：[M1XZG/fakestreet](https://github.com/M1XZG/fakestreet)（MIT）— 原版只有现货买卖。
@@ -44,13 +47,30 @@
 
 ## 快速开始
 
-### Docker（推荐）
+### 用现成镜像（最省事）
+
+每次推送到 `main` 都会构建并发布多架构镜像（amd64 / arm64）到 GHCR：
+
+```bash
+docker run -d --name trading-game \
+  -p 8000:8000 \
+  -v trading-game-data:/app/data \
+  --restart unless-stopped \
+  ghcr.io/d3-3109/fakestreet:latest
+```
+
+打开 `http://localhost:8000`。数据存在 `trading-game-data` 卷里，重启不丢。
+
+镜像标签：`latest`（主分支）、`sha-xxxxxxx`（每次提交）、`v1.2.3`（打了 tag 的话）。
+
+> 如果 GHCR 包是私有的，需要先 `docker login ghcr.io`。第一次推送后到仓库的
+> **Packages** 页面把包设为 public 即可匿名拉取。
+
+### 从源码用 Docker
 
 ```bash
 docker compose up --build
 ```
-
-打开 `http://localhost:8000`。同一局域网的设备访问 `http://<主机IP>:8000`。
 
 ### 不用 Docker
 
@@ -135,6 +155,29 @@ TRADING_GAME_MAINTENANCE_MARGIN=50   # 亏一半就平仓
 ```
 
 覆盖 109 项：认证流程、现货交易、做空、杠杆开平仓、强平、资金费、赛季轮换、采样、动态流、越权保护。
+
+### 离线模式
+
+测试默认会请求真实行情接口，这在 CI 里不可靠（Yahoo / CoinGecko 会限流数据中心 IP）。设置 `TRADING_GAME_OFFLINE=1` 后，行情层会切换到**确定性桩数据**：
+
+```bash
+TRADING_GAME_OFFLINE=1 TRADING_GAME_DB=/tmp/t.db ./run.sh
+./.venv/bin/python scripts/smoke_test.py http://127.0.0.1:8000
+```
+
+价格由 symbol 哈希推导，每次运行都一样（BTC 固定 65000、AAPL 固定 190），历史曲线是平滑的伪随机游走。这样测的是**结算逻辑、强平数学、赛季轮换**，而不是"今天第三方接口通不通"。
+
+同一套测试在两种模式下都是 109/109 通过。
+
+### CI
+
+| Workflow | 触发 | 做什么 |
+|---|---|---|
+| `tests.yml` | push / PR | Python 3.10 和 3.12 双版本跑离线冒烟测试；另有一个 job 校验桩数据契约 |
+| `docker.yml` | push / PR / tag | 构建多架构镜像推到 GHCR；PR 时只构建不推送，并启动容器做健康检查 |
+| `codeql.yml` | 上游自带 | 代码安全扫描 |
+
+CI 里没有任何步骤依赖真实行情，所以不会因为外部接口抖动而随机变红。
 
 ## 安全提醒
 
